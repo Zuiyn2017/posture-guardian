@@ -67,11 +67,11 @@
         .container {
             max-width: 1180px;
             margin: 0 auto;
-            padding: 32px 20px 28px;
+            padding: 20px 20px 16px;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 16px;
         }
 
         /* 头部 */
@@ -121,6 +121,8 @@
             position: relative;
             width: 100%;
             aspect-ratio: 4/3;
+            max-height: 72vh;
+            min-height: 360px;
             border-radius: 18px;
             overflow: hidden;
             background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
@@ -133,6 +135,73 @@
             object-fit: cover;
             /* 移除镜像，保证手机端不反转 */
             transform: none;
+        }
+
+        /* 浮层：检测结果 */
+        .result-overlay {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            max-width: 70%;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            backdrop-filter: blur(12px);
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        .result-overlay .line {
+            display: block;
+            color: #f5f7fb;
+        }
+
+        .result-overlay .issues {
+            color: #f6a600;
+        }
+
+        .result-overlay .bad {
+            color: #f04747;
+        }
+
+        .result-overlay .good {
+            color: #0bb07b;
+        }
+
+        /* 浮层：缩放控制 */
+        .zoom-panel {
+            position: absolute;
+            left: 50%;
+            bottom: 14px;
+            transform: translateX(-50%);
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 14px;
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 220px;
+        }
+
+        .zoom-panel label {
+            font-size: 0.85rem;
+            color: #e5e7eb;
+            white-space: nowrap;
+        }
+
+        .zoom-panel input[type="range"] {
+            flex: 1;
+            accent-color: var(--primary);
+        }
+
+        .zoom-panel .zoom-value {
+            font-size: 0.9rem;
+            color: #e5e7eb;
+            min-width: 42px;
+            text-align: right;
         }
 
         .video-overlay {
@@ -568,6 +637,12 @@
                                 <div id="statusDot" class="status-dot"></div>
                                 <span id="statusText">准备就绪</span>
                             </div>
+                            <div id="resultOverlay" class="result-overlay" style="display:none;"></div>
+                            <div class="zoom-panel">
+                                <label for="zoomSlider">缩放</label>
+                                <input id="zoomSlider" type="range" min="1" max="2.2" step="0.05" value="1">
+                                <span id="zoomValue" class="zoom-value">1.0x</span>
+                            </div>
                             <canvas id="canvas"></canvas>
                         </div>
                     </div>
@@ -634,6 +709,7 @@
         let countdownId = null;
         let isMonitoring = false;
         let isChecking = false;
+        let zoomFactor = 1.0;
         const CHECK_INTERVAL = 30; // 30秒
         let timeLeft = CHECK_INTERVAL;
 
@@ -652,6 +728,9 @@
         const issuesContainer = document.getElementById('issuesContainer');
         const logList = document.getElementById('logList');
         const countdownEl = document.getElementById('countdown');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomValue = document.getElementById('zoomValue');
+        const resultOverlay = document.getElementById('resultOverlay');
 
         // ============ 摄像头控制 ============
         async function startCamera() {
@@ -690,11 +769,22 @@
             statusText.textContent = '分析中...';
 
             try {
-                // 抓取画面
+                // 抓取画面（支持数字变焦）
                 const context = canvas.getContext('2d');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // 计算裁剪区域以实现数字缩放
+                const cropW = canvas.width / zoomFactor;
+                const cropH = canvas.height / zoomFactor;
+                const sx = (canvas.width - cropW) / 2;
+                const sy = (canvas.height - cropH) / 2;
+
+                context.drawImage(
+                    video,
+                    sx, sy, cropW, cropH,       // 裁剪源区域
+                    0, 0, canvas.width, canvas.height // 目标全画布
+                );
 
                 // 压缩图片
                 const imageData = canvas.toDataURL('image/jpeg', 0.7);
@@ -786,6 +876,23 @@
             const logType = status === 'normal' ? (isQualified ? 'good' : 'bad') : 'neutral';
             addLog(score !== '--' && score >= 0 ? score : '--', message, logType);
 
+            // 悬浮展示结果
+            const lines = [];
+            lines.push(`<span class="line">状态：${status}</span>`);
+            if (score !== '--' && score !== null && score !== undefined) {
+                lines.push(`<span class="line">得分：${score}（${isQualified ? '<span class="good">合格</span>' : '<span class="bad">不合格</span>'}）</span>`);
+            }
+            if (issues && issues.length > 0) {
+                lines.push(`<span class="line issues">问题：${issues.join('、')}</span>`);
+            } else {
+                lines.push(`<span class="line">问题：无</span>`);
+            }
+            if (suggestion) {
+                lines.push(`<span class="line">建议：${suggestion}</span>`);
+            }
+            resultOverlay.innerHTML = lines.join('');
+            resultOverlay.style.display = 'block';
+
             // 播放语音提醒（仅在正常状态且不合格时）
             if (status === 'normal' && data.audio) {
                 playAudio(data.audio);
@@ -824,6 +931,12 @@
             issuesContainer.innerHTML = issues.map(issue => 
                 `<span class="issue-tag">${issue}</span>`
             ).join('');
+        }
+
+        // ============ 变焦控制 ============
+        function setZoom(value) {
+            zoomFactor = parseFloat(value);
+            zoomValue.textContent = `${zoomFactor.toFixed(1)}x`;
         }
 
         function playAudio(base64Audio) {
@@ -952,6 +1065,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             // 预先请求摄像头权限
             startCamera();
+
+            // 初始化变焦
+            if (zoomSlider) {
+                zoomSlider.addEventListener('input', (e) => setZoom(e.target.value));
+                setZoom(zoomSlider.value);
+            }
         });
 
         // 页面关闭时停止摄像头
