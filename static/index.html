@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>坐姿守护助手</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f8bff;
+            --primary-dark: #2d6dff;
+            --success: #0bb07b;
+            --warning: #f6a600;
+            --danger: #f04747;
+            --bg-dark: #0b1021;
+            --bg-card: rgba(255, 255, 255, 0.06);
+            --glass: rgba(255, 255, 255, 0.08);
+            --text-primary: #f6f7fb;
+            --text-secondary: #9aa4b5;
+            --border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: radial-gradient(1200px at 20% 20%, rgba(79, 139, 255, 0.12), transparent),
+                        radial-gradient(1000px at 80% 0%, rgba(64, 224, 208, 0.12), transparent),
+                        radial-gradient(900px at 50% 80%, rgba(255, 255, 255, 0.05), transparent),
+                        linear-gradient(135deg, #0b1021 0%, #0f1a30 50%, #0b0f1f 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        /* 背景玻璃颗粒 */
+        .bg-animation {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .bg-animation::before {
+            content: '';
+            position: absolute;
+            inset: -20%;
+            background:
+                radial-gradient(600px at 20% 30%, rgba(79, 139, 255, 0.14), transparent 60%),
+                radial-gradient(700px at 80% 20%, rgba(255, 255, 255, 0.06), transparent 60%),
+                radial-gradient(700px at 40% 80%, rgba(64, 224, 208, 0.12), transparent 60%);
+            filter: blur(10px);
+            animation: bgFloat 18s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgFloat {
+            0% { transform: translate3d(0, 0, 0) scale(1); }
+            100% { transform: translate3d(10px, -10px, 0) scale(1.02); }
+        }
+
+        .container {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 32px 20px 28px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* 头部 */
+        header {
+            text-align: center;
+            padding: 8px 0 4px;
+        }
+
+        header h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: #f7f8fb;
+            margin-bottom: 6px;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* 布局 */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 18px;
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 卡片基类 */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 22px;
+            padding: 18px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(18px);
+        }
+
+        /* 视频容器 */
+        .video-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            border-radius: 18px;
+            overflow: hidden;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+            border: 1px solid var(--border-color);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            border-radius: 20px;
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+
+        .video-overlay.scanning {
+            border-color: var(--primary);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.3); }
+            50% { box-shadow: inset 0 0 40px rgba(99, 102, 241, 0.5); }
+        }
+
+        .video-status {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+        }
+
+        .status-dot.active {
+            background: var(--success);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        canvas {
+            display: none;
+        }
+
+        /* 得分面板 */
+        .score-panel {
+            padding: 22px;
+        }
+
+        .score-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .score-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .score-circle {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+
+        .score-circle svg {
+            transform: rotate(-90deg);
+            width: 80px;
+            height: 80px;
+        }
+
+        .score-circle .bg {
+            fill: none;
+            stroke: rgba(148, 163, 184, 0.2);
+            stroke-width: 8;
+        }
+
+        .score-circle .progress {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 226;
+            stroke-dashoffset: 226;
+            transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;
+        }
+
+        .score-circle .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .score-info h3 {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .score-info p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .countdown-box {
+            text-align: center;
+        }
+
+        .countdown-box .label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .countdown-box .time {
+            font-size: 1.9rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: var(--primary);
+        }
+
+        .countdown-box .unit {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* 问题标签 */
+        .issues-container {
+            margin-top: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .issue-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .issue-tag::before {
+            content: '⚠';
+            font-size: 0.7rem;
+        }
+
+        /* 控制按钮 */
+        .controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px 24px;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 35px -10px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 10px 30px -10px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(51, 65, 85, 0.8);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* 日志区域 */
+        .log-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 220px;
+        }
+
+        .log-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .log-header h3 {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .log-header button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .log-header button:hover {
+            color: var(--text-primary);
+        }
+
+        .log-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .log-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .log-score {
+            min-width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .log-score.good {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .log-score.bad {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+        }
+
+        .log-score.neutral {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-secondary);
+        }
+
+        .log-content {
+            flex: 1;
+        }
+
+        .log-time {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .log-message {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+            word-break: break-all;
+            white-space: normal;
+        }
+
+        .log-empty {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* 响应式 */
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 520px) {
+            .container {
+                padding: 16px 14px 18px;
+            }
+
+            header h1 {
+                font-size: 1.5rem;
+            }
+
+            .score-circle {
+                width: 64px;
+                height: 64px;
+            }
+
+            .score-circle svg {
+                width: 64px;
+                height: 64px;
+            }
+
+            .score-circle .score-text {
+                font-size: 1.2rem;
+            }
+        }
+
+        /* 加载动画 */
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top-color: currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast 提示 */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            padding: 14px 24px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+        <div class="container">
+            <header>
+                <h1>📝 坐姿守护助手</h1>
+                <p>保护视力，从好姿势开始</p>
+            </header>
+
+            <div class="main-grid">
+                <!-- 左侧：视频 + 控制 -->
+                <div class="section">
+                    <div class="card">
+                        <div class="video-container">
+                            <video id="video" autoplay playsinline muted></video>
+                            <div id="videoOverlay" class="video-overlay"></div>
+                            <div class="video-status">
+                                <div id="statusDot" class="status-dot"></div>
+                                <span id="statusText">准备就绪</span>
+                            </div>
+                            <canvas id="canvas"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="controls">
+                            <button id="toggleBtn" class="btn btn-primary" onclick="toggleMonitoring()">
+                                <span>▶</span> 开始监测
+                            </button>
+                            <button id="manualBtn" class="btn btn-secondary" onclick="manualCheck()" disabled>
+                                立即检测
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：得分 + 日志 -->
+                <div class="section">
+                    <div class="card score-panel">
+                        <div class="score-display">
+                            <div class="score-left">
+                                <div class="score-circle">
+                                    <svg viewBox="0 0 80 80">
+                                        <circle class="bg" cx="40" cy="40" r="36"></circle>
+                                        <circle id="progressRing" class="progress" cx="40" cy="40" r="36"></circle>
+                                    </svg>
+                                    <div id="scoreText" class="score-text">--</div>
+                                </div>
+                                <div class="score-info">
+                                    <h3 id="scoreLabel">等待检测</h3>
+                                    <p id="scoreDesc">点击开始监测</p>
+                                </div>
+                            </div>
+                            <div class="countdown-box">
+                                <div class="label">下次检测</div>
+                                <div>
+                                    <span id="countdown" class="time">--</span>
+                                    <span class="unit">秒</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="issuesContainer" class="issues-container"></div>
+                    </div>
+
+                    <div class="card log-section">
+                        <div class="log-header">
+                            <h3>检测记录</h3>
+                            <button onclick="clearLogs()">清空</button>
+                        </div>
+                        <div id="logList" class="log-list">
+                            <div class="log-empty">暂无检测记录</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // ============ 状态变量 ============
+        let stream = null;
+        let intervalId = null;
+        let countdownId = null;
+        let isMonitoring = false;
+        let isChecking = false;
+        const CHECK_INTERVAL = 30; // 30秒
+        let timeLeft = CHECK_INTERVAL;
+
+        // ============ DOM 元素 ============
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const manualBtn = document.getElementById('manualBtn');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const videoOverlay = document.getElementById('videoOverlay');
+        const scoreText = document.getElementById('scoreText');
+        const scoreLabel = document.getElementById('scoreLabel');
+        const scoreDesc = document.getElementById('scoreDesc');
+        const progressRing = document.getElementById('progressRing');
+        const issuesContainer = document.getElementById('issuesContainer');
+        const logList = document.getElementById('logList');
+        const countdownEl = document.getElementById('countdown');
+
+        // ============ 摄像头控制 ============
+        async function startCamera() {
+            try {
+                // 优先使用后置摄像头
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { ideal: "environment" },
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
+                video.srcObject = stream;
+                showToast('摄像头已启动');
+                return true;
+            } catch (err) {
+                console.error('摄像头启动失败:', err);
+                showToast('无法访问摄像头，请检查权限');
+                return false;
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+        }
+
+        // ============ 坐姿检测 ============
+        async function captureAndCheck() {
+            if (!stream || isChecking) return;
+
+            isChecking = true;
+            videoOverlay.classList.add('scanning');
+            statusText.textContent = '分析中...';
+
+            try {
+                // 抓取画面
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // 压缩图片
+                const imageData = canvas.toDataURL('image/jpeg', 0.7);
+
+                // 发送请求
+                const response = await fetch('/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                const data = await response.json();
+                handleResult(data);
+
+            } catch (err) {
+                console.error('检测失败:', err);
+                showToast('检测请求失败');
+                addLog(-1, '网络请求失败', 'neutral');
+            } finally {
+                isChecking = false;
+                videoOverlay.classList.remove('scanning');
+                statusText.textContent = isMonitoring ? '监测中' : '已暂停';
+            }
+        }
+
+        function handleResult(data) {
+            const status = data.status || 'normal';
+            const score = data.score !== undefined ? data.score : '--';
+            const isQualified = data.is_qualified || false;
+            const issues = data.issues || [];
+            const suggestion = data.suggestion || '';
+
+            // 构建显示消息 - 显示完整的原始分析结果
+            const parts = [];
+            
+            // 状态信息
+            if (status === 'no_person') {
+                parts.push('状态: 未检测到人物');
+            } else if (status === 'not_writing') {
+                parts.push('状态: 当前不在写字状态');
+            } else {
+                parts.push(`状态: ${status}`);
+            }
+            
+            // 得分信息
+            if (score !== '--' && score !== null && score !== undefined) {
+                parts.push(`得分: ${score}分`);
+            } else {
+                parts.push('得分: --');
+            }
+            
+            // 合格状态
+            parts.push(isQualified ? '✅ 合格' : '❌ 不合格');
+            
+            // 问题列表
+            if (issues && issues.length > 0) {
+                parts.push(`问题: ${issues.join('、')}`);
+            } else {
+                parts.push('问题: 无');
+            }
+            
+            // 建议
+            if (suggestion) {
+                parts.push(`建议: ${suggestion}`);
+            }
+            
+            const message = parts.join(' | ');
+            
+            // 在控制台也输出完整的原始结果，方便调试
+            console.log('完整分析结果:', data);
+
+            // 更新得分显示
+            if (score !== '--' && score !== null && score >= 0) {
+                updateScoreDisplay(score, isQualified);
+                updateIssues(issues);
+            } else {
+                // 特殊状态时显示 "--"
+                scoreText.textContent = '--';
+                progressRing.style.strokeDashoffset = 226;
+                progressRing.style.stroke = 'var(--text-secondary)';
+                scoreLabel.textContent = status === 'no_person' ? '未检测到人物' : 
+                                        status === 'not_writing' ? '不在写字状态' : 
+                                        '等待检测';
+                scoreDesc.textContent = '';
+                issuesContainer.innerHTML = '';
+            }
+
+            // 添加日志 - 显示完整信息
+            const logType = status === 'normal' ? (isQualified ? 'good' : 'bad') : 'neutral';
+            addLog(score !== '--' && score >= 0 ? score : '--', message, logType);
+
+            // 播放语音提醒（仅在正常状态且不合格时）
+            if (status === 'normal' && data.audio) {
+                playAudio(data.audio);
+            }
+        }
+
+        function updateScoreDisplay(score, isQualified) {
+            scoreText.textContent = score;
+            
+            // 更新环形进度条
+            const circumference = 226; // 2 * PI * 36
+            const offset = circumference - (score / 100) * circumference;
+            progressRing.style.strokeDashoffset = offset;
+
+            // 根据分数设置颜色
+            let color;
+            if (score >= 80) {
+                color = 'var(--success)';
+                scoreLabel.textContent = '姿势正确';
+                scoreDesc.textContent = '继续保持！';
+            } else if (score >= 60) {
+                color = 'var(--warning)';
+                scoreLabel.textContent = '需要改进';
+                scoreDesc.textContent = '稍微调整一下';
+            } else {
+                color = 'var(--danger)';
+                scoreLabel.textContent = '姿势不佳';
+                scoreDesc.textContent = '请调整坐姿';
+            }
+
+            progressRing.style.stroke = color;
+            scoreText.style.color = color;
+        }
+
+        function updateIssues(issues) {
+            issuesContainer.innerHTML = issues.map(issue => 
+                `<span class="issue-tag">${issue}</span>`
+            ).join('');
+        }
+
+        function playAudio(base64Audio) {
+            try {
+                const audio = new Audio("data:audio/mp3;base64," + base64Audio);
+                audio.play().catch(e => {
+                    console.log("音频播放失败 (需要用户交互):", e);
+                });
+            } catch (e) {
+                console.error("音频创建失败:", e);
+            }
+        }
+
+        // ============ 监测控制 ============
+        async function toggleMonitoring() {
+            if (!isMonitoring) {
+                // 开始监测
+                if (!stream) {
+                    const success = await startCamera();
+                    if (!success) return;
+                }
+
+                isMonitoring = true;
+                toggleBtn.innerHTML = '<span>⏸</span> 停止监测';
+                toggleBtn.classList.remove('btn-primary');
+                toggleBtn.classList.add('btn-danger');
+                manualBtn.disabled = false;
+                statusDot.classList.add('active');
+                statusText.textContent = '监测中';
+
+                // 立即执行一次检测
+                captureAndCheck();
+
+                // 启动定时器
+                timeLeft = CHECK_INTERVAL;
+                countdownEl.textContent = timeLeft;
+
+                countdownId = setInterval(() => {
+                    timeLeft--;
+                    countdownEl.textContent = timeLeft;
+                    if (timeLeft <= 0) {
+                        timeLeft = CHECK_INTERVAL;
+                    }
+                }, 1000);
+
+                intervalId = setInterval(captureAndCheck, CHECK_INTERVAL * 1000);
+
+                showToast('开始监测');
+
+            } else {
+                // 停止监测
+                isMonitoring = false;
+                toggleBtn.innerHTML = '<span>▶</span> 开始监测';
+                toggleBtn.classList.remove('btn-danger');
+                toggleBtn.classList.add('btn-primary');
+                manualBtn.disabled = true;
+                statusDot.classList.remove('active');
+                statusText.textContent = '已暂停';
+                countdownEl.textContent = '--';
+
+                clearInterval(intervalId);
+                clearInterval(countdownId);
+
+                showToast('已停止监测');
+            }
+        }
+
+        function manualCheck() {
+            if (!isMonitoring || isChecking) return;
+            
+            // 重置倒计时
+            timeLeft = CHECK_INTERVAL;
+            countdownEl.textContent = timeLeft;
+            
+            captureAndCheck();
+        }
+
+        // ============ 日志管理 ============
+        function addLog(score, message, type = 'neutral') {
+            const emptyEl = logList.querySelector('.log-empty');
+            if (emptyEl) emptyEl.remove();
+
+            const time = new Date().toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit'
+            });
+
+            const logItem = document.createElement('div');
+            logItem.className = 'log-item';
+            logItem.innerHTML = `
+                <div class="log-score ${type}">
+                    ${score >= 0 ? score : '--'}
+                </div>
+                <div class="log-content">
+                    <div class="log-time">${time}</div>
+                    <div class="log-message">${message}</div>
+                </div>
+            `;
+
+            logList.insertBefore(logItem, logList.firstChild);
+
+            // 限制日志数量
+            while (logList.children.length > 50) {
+                logList.removeChild(logList.lastChild);
+            }
+        }
+
+        function clearLogs() {
+            logList.innerHTML = '<div class="log-empty">暂无检测记录</div>';
+            showToast('已清空记录');
+        }
+
+        // ============ Toast 提示 ============
+        function showToast(message, duration = 2000) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, duration);
+        }
+
+        // ============ 初始化 ============
+        document.addEventListener('DOMContentLoaded', () => {
+            // 预先请求摄像头权限
+            startCamera();
+        });
+
+        // 页面关闭时停止摄像头
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+        });
+    </script>
+</body>
+</html>
+
