@@ -1540,10 +1540,13 @@
             return `摄像头 ${index + 1}`;
         }
 
-        // 使用指定摄像头启动
-        async function startCameraWithId(deviceId = null) {
-            // 先停止现有流
-            stopCamera();
+        // 使用指定摄像头启动（带重试机制）
+        async function startCameraWithId(deviceId = null, retryCount = 0) {
+            const MAX_RETRIES = 3;
+            const RETRY_DELAY = 500;
+
+            // 先停止现有流并等待释放
+            await stopCamera();
 
             const constraints = {
                 video: {
@@ -1554,15 +1557,17 @@
 
             if (deviceId) {
                 constraints.video.deviceId = { exact: deviceId };
-            } else {
-                // 默认尝试后置主摄（不指定 facingMode 以避免系统自动选择长焦）
-                // 某些设备 facingMode: environment 会选择长焦镜头
             }
 
             try {
+                console.log(`尝试启动摄像头 (尝试 ${retryCount + 1}/${MAX_RETRIES + 1}):`, deviceId || 'default');
+                
                 stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
                 videoTrack = stream.getVideoTracks()[0];
+                
+                // 等待视频流加载完成
+                await waitForVideoReady();
                 
                 currentCameraId = videoTrack.getSettings().deviceId;
                 
@@ -1579,10 +1584,50 @@
                 console.log('摄像头已启动:', videoTrack.label);
                 return true;
             } catch (err) {
-                console.error('启动摄像头失败:', err);
-                showToast('启动摄像头失败', 'error');
+                console.error(`启动摄像头失败 (尝试 ${retryCount + 1}):`, err.name, err.message);
+                
+                // 如果还有重试机会
+                if (retryCount < MAX_RETRIES) {
+                    console.log(`等待 ${RETRY_DELAY}ms 后重试...`);
+                    await new Promise(r => setTimeout(r, RETRY_DELAY));
+                    return startCameraWithId(deviceId, retryCount + 1);
+                }
+                
+                showToast('摄像头启动失败，请重试', 'error');
                 return false;
             }
+        }
+
+        // 等待视频流加载完成
+        function waitForVideoReady() {
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('视频加载超时'));
+                }, 5000);
+
+                if (video.readyState >= 2) {
+                    clearTimeout(timeout);
+                    resolve();
+                    return;
+                }
+
+                const onLoaded = () => {
+                    clearTimeout(timeout);
+                    video.removeEventListener('loadeddata', onLoaded);
+                    video.removeEventListener('error', onError);
+                    resolve();
+                };
+
+                const onError = (e) => {
+                    clearTimeout(timeout);
+                    video.removeEventListener('loadeddata', onLoaded);
+                    video.removeEventListener('error', onError);
+                    reject(e);
+                };
+
+                video.addEventListener('loadeddata', onLoaded);
+                video.addEventListener('error', onError);
+            });
         }
 
         // 更新摄像头名称显示
@@ -1646,12 +1691,27 @@
                 return;
             }
 
-            currentCameraIndex = (currentCameraIndex + 1) % allCameras.length;
-            const nextCamera = allCameras[currentCameraIndex];
+            if (isSwitchingCamera) {
+                showToast('正在切换中，请稍候...', 'hourglass_empty');
+                return;
+            }
+
+            isSwitchingCamera = true;
             
-            showToast('切换摄像头...', 'flip_camera_ios');
-            await startCameraWithId(nextCamera.deviceId);
-            showToast(`已切换: ${getCameraDisplayName(nextCamera, currentCameraIndex)}`, 'check');
+            const nextIndex = (currentCameraIndex + 1) % allCameras.length;
+            const nextCamera = allCameras[nextIndex];
+            
+            showToast('正在切换摄像头...', 'flip_camera_ios');
+            
+            try {
+                const success = await startCameraWithId(nextCamera.deviceId);
+                if (success) {
+                    currentCameraIndex = nextIndex;
+                    showToast(`已切换: ${getCameraDisplayName(nextCamera, nextIndex)}`, 'check_circle');
+                }
+            } finally {
+                isSwitchingCamera = false;
+            }
         }
 
         // 显示摄像头选择面板
@@ -1704,24 +1764,46 @@
         }
 
         // 选择指定摄像头
+        let isSwitchingCamera = false;
+        
         async function selectCamera(deviceId, index) {
             if (deviceId === currentCameraId) {
                 hideCameraSelector();
                 return;
             }
 
-            showToast('切换摄像头...', 'flip_camera_ios');
+            // 防止重复点击
+            if (isSwitchingCamera) {
+                showToast('正在切换中，请稍候...', 'hourglass_empty');
+                return;
+            }
+
+            isSwitchingCamera = true;
             
-            const success = await startCameraWithId(deviceId);
+            // 更新UI状态
+            const items = document.querySelectorAll('.camera-item');
+            items.forEach(el => el.style.opacity = '0.5');
             
-            if (success) {
-                currentCameraIndex = index;
-                showToast(`已切换: ${getCameraDisplayName(allCameras[index], index)}`, 'check');
+            showToast('正在切换摄像头...', 'flip_camera_ios');
+            
+            try {
+                const success = await startCameraWithId(deviceId);
                 
-                // 更新列表选中状态
-                document.querySelectorAll('.camera-item').forEach((el, i) => {
-                    el.classList.toggle('active', i === index);
-                });
+                if (success) {
+                    currentCameraIndex = index;
+                    showToast(`已切换: ${getCameraDisplayName(allCameras[index], index)}`, 'check_circle');
+                    
+                    // 更新列表选中状态
+                    items.forEach((el, i) => {
+                        el.classList.toggle('active', i === index);
+                        el.style.opacity = '1';
+                    });
+                } else {
+                    // 恢复UI
+                    items.forEach(el => el.style.opacity = '1');
+                }
+            } finally {
+                isSwitchingCamera = false;
             }
             
             hideCameraSelector();
@@ -1799,13 +1881,26 @@
         }
 
         function stopCamera() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-                videoTrack = null;
-            }
-            // 重置视频变换
-            video.style.transform = 'none';
+            return new Promise((resolve) => {
+                if (stream) {
+                    // 停止所有轨道
+                    stream.getTracks().forEach(track => {
+                        track.stop();
+                        console.log('停止轨道:', track.label);
+                    });
+                    
+                    // 清除视频源
+                    video.srcObject = null;
+                    stream = null;
+                    videoTrack = null;
+                }
+                
+                // 重置视频变换
+                video.style.transform = 'none';
+                
+                // 给设备时间释放资源
+                setTimeout(resolve, 300);
+            });
         }
 
         // ============ 缩放控制 ============
