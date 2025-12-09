@@ -2,427 +2,622 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>坐姿守护助手</title>
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
         :root {
-            --primary: #4f8bff;
-            --primary-dark: #2d6dff;
-            --success: #0bb07b;
-            --warning: #f6a600;
-            --danger: #f04747;
-            --bg-dark: #0b1021;
-            --bg-card: rgba(255, 255, 255, 0.06);
-            --glass: rgba(255, 255, 255, 0.08);
-            --text-primary: #f6f7fb;
-            --text-secondary: #9aa4b5;
-            --border-color: rgba(255, 255, 255, 0.12);
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --success: #10b981;
+            --success-light: #34d399;
+            --success-glow: rgba(16, 185, 129, 0.4);
+            --warning: #f59e0b;
+            --warning-light: #fbbf24;
+            --danger: #ef4444;
+            --danger-light: #f87171;
+            --danger-glow: rgba(239, 68, 68, 0.4);
+            --bg-start: #0f0f23;
+            --bg-mid: #1a1a3e;
+            --bg-end: #0d0d1f;
+            --glass: rgba(255, 255, 255, 0.06);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-hover: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --transition-fast: 0.15s ease;
+            --transition-normal: 0.25s ease;
+            --transition-slow: 0.4s ease;
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
         }
 
         body {
-            font-family: 'Noto Sans SC', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: radial-gradient(1200px at 20% 20%, rgba(79, 139, 255, 0.12), transparent),
-                        radial-gradient(1000px at 80% 0%, rgba(64, 224, 208, 0.12), transparent),
-                        radial-gradient(900px at 50% 80%, rgba(255, 255, 255, 0.05), transparent),
-                        linear-gradient(135deg, #0b1021 0%, #0f1a30 50%, #0b0f1f 100%);
-            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            background: linear-gradient(145deg, var(--bg-start) 0%, var(--bg-mid) 50%, var(--bg-end) 100%);
             color: var(--text-primary);
-            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            padding-top: calc(16px + var(--safe-top));
+            padding-bottom: calc(16px + var(--safe-bottom));
         }
 
-        /* 背景玻璃颗粒 */
-        .bg-animation {
+        /* 背景动画 */
+        .bg-effects {
             position: fixed;
             inset: 0;
-            overflow: hidden;
+            pointer-events: none;
             z-index: -1;
+            overflow: hidden;
         }
 
-        .bg-animation::before {
+        .bg-effects::before {
             content: '';
             position: absolute;
-            inset: -20%;
-            background:
-                radial-gradient(600px at 20% 30%, rgba(79, 139, 255, 0.14), transparent 60%),
-                radial-gradient(700px at 80% 20%, rgba(255, 255, 255, 0.06), transparent 60%),
-                radial-gradient(700px at 40% 80%, rgba(64, 224, 208, 0.12), transparent 60%);
-            filter: blur(10px);
-            animation: bgFloat 18s ease-in-out infinite alternate;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(ellipse 600px 400px at 20% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse 500px 500px at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse 400px 300px at 60% 30%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
+            animation: aurora 25s ease-in-out infinite alternate;
         }
 
-        @keyframes bgFloat {
-            0% { transform: translate3d(0, 0, 0) scale(1); }
-            100% { transform: translate3d(10px, -10px, 0) scale(1.02); }
+        @keyframes aurora {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            100% { transform: translate(-3%, 3%) rotate(2deg) scale(1.02); }
         }
 
-        .container {
-            max-width: 1180px;
-            margin: 0 auto;
-            padding: 20px 20px 16px;
-            min-height: 100vh;
+        /* 主容器 */
+        .app-container {
+            width: 100%;
+            max-width: 420px;
             display: flex;
             flex-direction: column;
             gap: 16px;
+            height: 100%;
+            max-height: 100%;
+            animation: fadeInUp 0.6s var(--transition-slow) both;
         }
 
-        /* 头部 */
-        header {
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 标题 */
+        .app-header {
             text-align: center;
-            padding: 8px 0 4px;
+            padding: 8px 0;
+            flex-shrink: 0;
+            animation: fadeInUp 0.6s 0.1s var(--transition-slow) both;
         }
 
-        header h1 {
-            font-size: 1.9rem;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            color: #f7f8fb;
-            margin-bottom: 6px;
-        }
-
-        header p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        /* 布局 */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1.15fr 0.85fr;
-            gap: 18px;
-        }
-
-        .section {
+        .app-header h1 {
             display: flex;
-            flex-direction: column;
-            gap: 16px;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
         }
 
-        /* 卡片基类 */
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 22px;
-            padding: 18px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(18px);
+        .app-header h1 .material-icons-round {
+            font-size: 1.6rem;
+            color: var(--primary-light);
         }
 
-        /* 视频容器 */
-        .video-container {
+        .app-header p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* 视频卡片 */
+        .video-card {
             position: relative;
             width: 100%;
-            aspect-ratio: 4/3;
-            max-height: 72vh;
-            min-height: 360px;
-            border-radius: 18px;
+            aspect-ratio: 3/4;
+            border-radius: 24px;
             overflow: hidden;
-            background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-            border: 1px solid var(--border-color);
+            background: linear-gradient(145deg, rgba(30, 30, 60, 0.5), rgba(20, 20, 40, 0.7));
+            border: 1px solid var(--glass-border);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+            flex-shrink: 0;
+            animation: fadeInUp 0.6s 0.2s var(--transition-slow) both;
+            transition: box-shadow var(--transition-normal), transform var(--transition-normal);
+        }
+
+        .video-card:hover {
+            box-shadow: 
+                0 30px 60px -15px rgba(0, 0, 0, 0.6),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 0 40px -10px var(--primary-glow);
+        }
+
+        .video-wrapper {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 24px;
         }
 
         video {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            /* 移除镜像，保证手机端不反转 */
-            transform: none;
+            transform-origin: center center;
+            transition: transform 0.2s ease-out;
         }
 
-        /* 浮层：检测结果 */
-        .result-overlay {
+        canvas { display: none; }
+
+        /* 扫描边框 */
+        .scan-frame {
             position: absolute;
-            top: 14px;
-            right: 14px;
-            max-width: 70%;
-            padding: 12px 14px;
-            background: rgba(0, 0, 0, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 14px;
-            backdrop-filter: blur(12px);
-            font-size: 0.9rem;
-            line-height: 1.4;
-        }
-
-        .result-overlay .line {
-            display: block;
-            color: #f5f7fb;
-        }
-
-        .result-overlay .issues {
-            color: #f6a600;
-        }
-
-        .result-overlay .bad {
-            color: #f04747;
-        }
-
-        .result-overlay .good {
-            color: #0bb07b;
-        }
-
-        /* 浮层：缩放控制 */
-        .zoom-panel {
-            position: absolute;
-            left: 50%;
-            bottom: 14px;
-            transform: translateX(-50%);
-            padding: 8px 12px;
-            background: rgba(0, 0, 0, 0.55);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 14px;
-            backdrop-filter: blur(12px);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 220px;
-        }
-
-        .zoom-panel label {
-            font-size: 0.85rem;
-            color: #e5e7eb;
-            white-space: nowrap;
-        }
-
-        .zoom-panel input[type="range"] {
-            flex: 1;
-            accent-color: var(--primary);
-        }
-
-        .zoom-panel .zoom-value {
-            font-size: 0.9rem;
-            color: #e5e7eb;
-            min-width: 42px;
-            text-align: right;
-        }
-
-        .video-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            border-radius: 20px;
+            inset: 12px;
             border: 2px solid transparent;
-            transition: border-color 0.3s ease;
+            border-radius: 16px;
+            pointer-events: none;
+            transition: all var(--transition-normal);
         }
 
-        .video-overlay.scanning {
+        .scan-frame.active {
             border-color: var(--primary);
-            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 
+                0 0 20px var(--primary-glow),
+                inset 0 0 30px rgba(99, 102, 241, 0.08);
+            animation: scan-pulse 1.8s ease-in-out infinite;
         }
 
-        @keyframes pulse {
-            0%, 100% { box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.3); }
-            50% { box-shadow: inset 0 0 40px rgba(99, 102, 241, 0.5); }
+        @keyframes scan-pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
-        .video-status {
+        /* 角标装饰 */
+        .corner-marks {
+            position: absolute;
+            inset: 20px;
+            pointer-events: none;
+        }
+
+        .corner-marks::before,
+        .corner-marks::after,
+        .corner-marks span::before,
+        .corner-marks span::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-color: rgba(255, 255, 255, 0.25);
+            border-style: solid;
+            border-width: 0;
+            transition: border-color var(--transition-normal);
+        }
+
+        .corner-marks::before { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; border-radius: 6px 0 0 0; }
+        .corner-marks::after { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; border-radius: 0 6px 0 0; }
+        .corner-marks span::before { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; border-radius: 0 0 0 6px; }
+        .corner-marks span::after { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; border-radius: 0 0 6px 0; }
+
+        .scan-frame.active ~ .corner-marks::before,
+        .scan-frame.active ~ .corner-marks::after,
+        .scan-frame.active ~ .corner-marks span::before,
+        .scan-frame.active ~ .corner-marks span::after {
+            border-color: var(--primary-light);
+        }
+
+        /* 顶部状态栏 */
+        .video-top-bar {
             position: absolute;
             top: 16px;
             left: 16px;
+            right: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .status-pill {
             display: flex;
             align-items: center;
             gap: 8px;
             padding: 8px 14px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(12px);
             border-radius: 20px;
             font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all var(--transition-normal);
+        }
+
+        .status-pill:hover {
+            background: rgba(0, 0, 0, 0.55);
         }
 
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: var(--text-secondary);
+            background: var(--text-muted);
+            transition: all var(--transition-normal);
         }
 
         .status-dot.active {
             background: var(--success);
-            animation: blink 1.5s ease-in-out infinite;
+            box-shadow: 0 0 12px var(--success-glow);
+            animation: pulse-dot 1.5s ease-in-out infinite;
         }
 
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.8); opacity: 0.6; }
         }
 
-        canvas {
-            display: none;
-        }
-
-        /* 得分面板 */
-        .score-panel {
-            padding: 22px;
-        }
-
-        .score-display {
+        .countdown-pill {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-        }
-
-        .score-left {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .score-circle {
-            position: relative;
-            width: 80px;
-            height: 80px;
-        }
-
-        .score-circle svg {
-            transform: rotate(-90deg);
-            width: 80px;
-            height: 80px;
-        }
-
-        .score-circle .bg {
-            fill: none;
-            stroke: rgba(148, 163, 184, 0.2);
-            stroke-width: 8;
-        }
-
-        .score-circle .progress {
-            fill: none;
-            stroke: var(--primary);
-            stroke-width: 8;
-            stroke-linecap: round;
-            stroke-dasharray: 226;
-            stroke-dashoffset: 226;
-            transition: stroke-dashoffset 0.8s ease, stroke 0.3s ease;
-        }
-
-        .score-circle .score-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .score-info h3 {
-            font-size: 1.1rem;
-            font-weight: 500;
-            margin-bottom: 4px;
-        }
-
-        .score-info p {
-            color: var(--text-secondary);
+            gap: 6px;
+            padding: 8px 14px;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
             font-size: 0.85rem;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all var(--transition-normal);
         }
 
-        .countdown-box {
+        .countdown-pill:hover {
+            background: rgba(0, 0, 0, 0.55);
+        }
+
+        .countdown-pill .material-icons-round {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .countdown-pill .time {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-light);
+            font-variant-numeric: tabular-nums;
+            min-width: 24px;
             text-align: center;
         }
 
-        .countdown-box .label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
+        /* 结果浮层 */
+        .result-overlay {
+            position: absolute;
+            bottom: 70px;
+            left: 16px;
+            right: 16px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(12px);
+            transition: all var(--transition-normal);
+            pointer-events: none;
         }
 
-        .countdown-box .time {
-            font-size: 1.9rem;
+        .result-overlay.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .result-main {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .result-score-ring {
+            position: relative;
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+        }
+
+        .result-score-ring svg {
+            transform: rotate(-90deg);
+            width: 56px;
+            height: 56px;
+        }
+
+        .result-score-ring .bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.08);
+            stroke-width: 4;
+        }
+
+        .result-score-ring .progress {
+            fill: none;
+            stroke: var(--primary);
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 157;
+            stroke-dashoffset: 157;
+            transition: stroke-dashoffset 0.6s ease, stroke var(--transition-normal);
+        }
+
+        .result-score-ring .score-num {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
             font-weight: 700;
-            font-variant-numeric: tabular-nums;
-            color: var(--primary);
+            transition: color var(--transition-normal);
         }
 
-        .countdown-box .unit {
-            font-size: 0.85rem;
+        .result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-info h4 {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .result-info h4 .material-icons-round {
+            font-size: 1.1rem;
+        }
+
+        .result-info p {
+            font-size: 0.8rem;
             color: var(--text-secondary);
         }
 
-        /* 问题标签 */
-        .issues-container {
-            margin-top: 16px;
+        .result-tags {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
+            margin-top: 12px;
         }
 
-        .issue-tag {
-            display: inline-flex;
+        .result-tag {
+            display: flex;
             align-items: center;
             gap: 4px;
-            padding: 6px 12px;
+            padding: 5px 10px;
             background: rgba(239, 68, 68, 0.15);
-            color: #fca5a5;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: var(--danger-light);
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: 1px solid rgba(239, 68, 68, 0.2);
         }
 
-        .issue-tag::before {
-            content: '⚠';
-            font-size: 0.7rem;
+        .result-tag .material-icons-round {
+            font-size: 0.9rem;
+        }
+
+        .result-suggestion {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            margin-top: 12px;
+            padding: 10px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        .result-suggestion .material-icons-round {
+            font-size: 1rem;
+            color: var(--warning);
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        /* 缩放控制 */
+        .zoom-bar {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(12px);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            z-index: 10;
+            transition: all var(--transition-normal);
+        }
+
+        .zoom-bar:hover {
+            background: rgba(0, 0, 0, 0.55);
+        }
+
+        .zoom-bar .material-icons-round {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+        }
+
+        .zoom-bar input[type="range"] {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .zoom-bar input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            cursor: pointer;
+            box-shadow: 0 2px 10px var(--primary-glow);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+        }
+
+        .zoom-bar input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 14px var(--primary-glow);
+        }
+
+        .zoom-bar input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.15);
+        }
+
+        .zoom-bar .zoom-value {
+            font-size: 0.85rem;
+            font-weight: 600;
+            min-width: 42px;
+            text-align: right;
+            color: var(--primary-light);
+            font-variant-numeric: tabular-nums;
         }
 
         /* 控制按钮 */
         .controls {
             display: flex;
             gap: 12px;
+            flex-shrink: 0;
+            animation: fadeInUp 0.6s 0.3s var(--transition-slow) both;
         }
 
         .btn {
             flex: 1;
-            padding: 16px 24px;
+            padding: 16px;
             border: none;
-            border-radius: 14px;
-            font-size: 1rem;
-            font-weight: 500;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
+            transition: all var(--transition-normal);
+            letter-spacing: -0.01em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+        }
+
+        .btn:hover::before {
+            opacity: 1;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn .material-icons-round {
+            font-size: 1.2rem;
+            transition: transform var(--transition-fast);
+        }
+
+        .btn:hover .material-icons-round {
+            transform: scale(1.1);
         }
 
         .btn-primary {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
-            box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 8px 24px -8px var(--primary-glow);
         }
 
         .btn-primary:hover {
+            box-shadow: 0 12px 32px -8px var(--primary-glow);
             transform: translateY(-2px);
-            box-shadow: 0 15px 35px -10px rgba(99, 102, 241, 0.6);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
         }
 
         .btn-danger {
             background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
             color: white;
-            box-shadow: 0 10px 30px -10px rgba(239, 68, 68, 0.5);
+            box-shadow: 0 8px 24px -8px var(--danger-glow);
+        }
+
+        .btn-danger:hover {
+            box-shadow: 0 12px 32px -8px var(--danger-glow);
+            transform: translateY(-2px);
         }
 
         .btn-secondary {
-            background: var(--bg-card);
+            background: var(--glass);
             color: var(--text-primary);
-            border: 1px solid var(--border-color);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(12px);
         }
 
         .btn-secondary:hover {
-            background: rgba(51, 65, 85, 0.8);
+            background: var(--glass-hover);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
         }
 
         .btn:disabled {
@@ -431,286 +626,497 @@
             transform: none !important;
         }
 
-        /* 日志区域 */
-        .log-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 220px;
+        .btn:disabled:hover {
+            transform: none !important;
+            box-shadow: none;
         }
 
-        .log-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .log-header h3 {
-            font-size: 1rem;
-            font-weight: 500;
-        }
-
-        .log-header button {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-
-        .log-header button:hover {
-            color: var(--text-primary);
-        }
-
-        .log-list {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .log-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px;
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 12px;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .log-score {
-            min-width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
-
-        .log-score.good {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-        }
-
-        .log-score.bad {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
-        }
-
-        .log-score.neutral {
-            background: rgba(148, 163, 184, 0.2);
-            color: var(--text-secondary);
-        }
-
-        .log-content {
-            flex: 1;
-        }
-
-        .log-time {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-bottom: 4px;
-        }
-
-        .log-message {
-            font-size: 0.85rem;
-            line-height: 1.5;
-            word-wrap: break-word;
-            word-break: break-all;
-            white-space: normal;
-        }
-
-        .log-empty {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        /* 响应式 */
-        @media (max-width: 1024px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .controls {
-                flex-direction: column;
-            }
-        }
-
-        @media (max-width: 520px) {
-            .container {
-                padding: 16px 14px 18px;
-            }
-
-            header h1 {
-                font-size: 1.5rem;
-            }
-
-            .score-circle {
-                width: 64px;
-                height: 64px;
-            }
-
-            .score-circle svg {
-                width: 64px;
-                height: 64px;
-            }
-
-            .score-circle .score-text {
-                font-size: 1.2rem;
-            }
-        }
-
-        /* 加载动画 */
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid transparent;
-            border-top-color: currentColor;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Toast 提示 */
+        /* Toast */
         .toast {
             position: fixed;
-            bottom: 100px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: var(--bg-card);
-            backdrop-filter: blur(20px);
+            transform: translate(-50%, -50%) scale(0.9);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(16px);
             padding: 14px 24px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
             font-size: 0.9rem;
+            font-weight: 500;
             opacity: 0;
-            transition: all 0.3s ease;
-            z-index: 1000;
+            pointer-events: none;
+            transition: all var(--transition-normal);
+            z-index: 100;
+        }
+
+        .toast .material-icons-round {
+            font-size: 1.2rem;
+            color: var(--primary-light);
         }
 
         .toast.show {
             opacity: 1;
-            transform: translateX(-50%) translateY(0);
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* 历史记录按钮 */
+        .history-btn {
+            position: fixed;
+            bottom: calc(20px + var(--safe-bottom));
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 24px -4px var(--primary-glow);
+            transition: all var(--transition-normal);
+            z-index: 50;
+        }
+
+        .history-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 32px -4px var(--primary-glow);
+        }
+
+        .history-btn:active {
+            transform: scale(0.95);
+        }
+
+        .history-btn .material-icons-round {
+            font-size: 1.5rem;
+        }
+
+        .history-btn .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: var(--danger);
+            color: white;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 历史记录面板 */
+        .history-panel {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transition: all var(--transition-normal);
+        }
+
+        .history-panel.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .history-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-height: 85vh;
+            background: linear-gradient(145deg, var(--bg-mid), var(--bg-end));
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            border: 1px solid var(--glass-border);
+            border-bottom: none;
+            transform: translateY(100%);
+            transition: transform var(--transition-slow);
+            display: flex;
+            flex-direction: column;
+            padding-bottom: var(--safe-bottom);
+        }
+
+        .history-panel.show .history-content {
+            transform: translateY(0);
+        }
+
+        .history-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid var(--glass-border);
+            flex-shrink: 0;
+        }
+
+        .history-header h3 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .history-header h3 .material-icons-round {
+            font-size: 1.3rem;
+            color: var(--primary-light);
+        }
+
+        .history-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-header button {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--glass);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+
+        .history-header button:hover {
+            background: var(--glass-hover);
+            color: var(--text-primary);
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--text-muted);
+            padding: 40px;
+        }
+
+        .history-empty .material-icons-round {
+            font-size: 3rem;
+            opacity: 0.5;
+        }
+
+        .history-item {
+            display: flex;
+            gap: 14px;
+            padding: 14px;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            animation: fadeInUp 0.3s ease both;
+        }
+
+        .history-item-score {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .history-item-score.good {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+
+        .history-item-score.bad {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+        }
+
+        .history-item-score.neutral {
+            background: rgba(100, 116, 139, 0.15);
+            color: var(--text-secondary);
+        }
+
+        .history-item-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .history-item-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .history-item-title .material-icons-round {
+            font-size: 1rem;
+        }
+
+        .history-item-time {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .history-item-issues {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 8px;
+        }
+
+        .history-item-issues span {
+            padding: 3px 8px;
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--danger-light);
+            border-radius: 8px;
+            font-size: 0.7rem;
+        }
+
+        .history-item-suggestion {
+            margin-top: 8px;
+            padding: 8px 10px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* 响应式 - 平板 */
+        @media (min-width: 768px) {
+            body {
+                padding: 24px;
+            }
+
+            .app-container {
+                max-width: 400px;
+            }
+
+            .app-header h1 {
+                font-size: 1.6rem;
+            }
+
+            .video-card {
+                box-shadow: 
+                    0 40px 80px -20px rgba(0, 0, 0, 0.6),
+                    0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            }
+
+            .btn {
+                padding: 18px;
+            }
+        }
+
+        /* 响应式 - 小屏幕 */
+        @media (max-height: 700px) {
+            .app-header h1 { font-size: 1.3rem; }
+            .app-header p { display: none; }
+            .video-card { aspect-ratio: 4/5; }
+            .btn { padding: 14px; }
+        }
+
+        @media (max-height: 600px) {
+            .app-header { padding: 4px 0; }
+            .app-container { gap: 12px; }
+            .video-card { aspect-ratio: 1/1; }
+        }
+
+        /* 响应式 - 大屏幕 */
+        @media (min-width: 1024px) {
+            .app-container {
+                max-width: 380px;
+            }
+
+            .video-card:hover {
+                transform: translateY(-4px);
+            }
+        }
+
+        /* 触摸设备优化 */
+        @media (hover: none) {
+            .btn:hover {
+                transform: none;
+            }
+            
+            .btn:active {
+                transform: scale(0.97);
+            }
+
+            .video-card:hover {
+                transform: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="bg-animation"></div>
+    <div class="bg-effects"></div>
 
-        <div class="container">
-            <header>
-                <h1>📝 坐姿守护助手</h1>
-                <p>保护视力，从好姿势开始</p>
-            </header>
+    <div class="app-container">
+        <!-- 标题 -->
+        <header class="app-header">
+            <h1>
+                <span class="material-icons-round">edit_note</span>
+                坐姿守护助手
+            </h1>
+            <p>保护视力，从好姿势开始</p>
+        </header>
 
-            <div class="main-grid">
-                <!-- 左侧：视频 + 控制 -->
-                <div class="section">
-                    <div class="card">
-                        <div class="video-container">
-                            <video id="video" autoplay playsinline muted></video>
-                            <div id="videoOverlay" class="video-overlay"></div>
-                            <div class="video-status">
-                                <div id="statusDot" class="status-dot"></div>
-                                <span id="statusText">准备就绪</span>
-                            </div>
-                            <div id="resultOverlay" class="result-overlay" style="display:none;"></div>
-                            <div class="zoom-panel">
-                                <label for="zoomSlider">缩放</label>
-                                <input id="zoomSlider" type="range" min="1" max="2.2" step="0.05" value="1">
-                                <span id="zoomValue" class="zoom-value">1.0x</span>
-                            </div>
-                            <canvas id="canvas"></canvas>
-                        </div>
+        <!-- 视频卡片 -->
+        <div class="video-card">
+            <div class="video-wrapper">
+                <video id="video" autoplay playsinline muted></video>
+            </div>
+            
+            <!-- 扫描框 -->
+            <div id="scanFrame" class="scan-frame"></div>
+            
+            <!-- 角标 -->
+            <div class="corner-marks"><span></span></div>
+            
+            <!-- 顶部状态 -->
+            <div class="video-top-bar">
+                <div class="status-pill">
+                    <div id="statusDot" class="status-dot"></div>
+                    <span id="statusText">准备就绪</span>
+                </div>
+                <div class="countdown-pill">
+                    <span class="material-icons-round">timer</span>
+                    <span id="countdown" class="time">--</span>
+                    <span>秒</span>
+                </div>
+            </div>
+
+            <!-- 结果浮层 -->
+            <div id="resultOverlay" class="result-overlay">
+                <div class="result-main">
+                    <div class="result-score-ring">
+                        <svg viewBox="0 0 56 56">
+                            <circle class="bg" cx="28" cy="28" r="25"></circle>
+                            <circle id="resultProgress" class="progress" cx="28" cy="28" r="25"></circle>
+                        </svg>
+                        <div id="resultScoreNum" class="score-num">--</div>
                     </div>
-
-                    <div class="card">
-                        <div class="controls">
-                            <button id="toggleBtn" class="btn btn-primary" onclick="toggleMonitoring()">
-                                <span>▶</span> 开始监测
-                            </button>
-                            <button id="manualBtn" class="btn btn-secondary" onclick="manualCheck()" disabled>
-                                立即检测
-                            </button>
-                        </div>
+                    <div class="result-info">
+                        <h4 id="resultTitle">
+                            <span class="material-icons-round" id="resultIcon">hourglass_empty</span>
+                            等待检测
+                        </h4>
+                        <p id="resultDesc">点击开始监测</p>
                     </div>
                 </div>
+                <div id="resultTags" class="result-tags"></div>
+                <div id="resultSuggestion" class="result-suggestion" style="display:none;">
+                    <span class="material-icons-round">lightbulb</span>
+                    <span id="resultSuggestionText"></span>
+                </div>
+            </div>
 
-                <!-- 右侧：得分 + 日志 -->
-                <div class="section">
-                    <div class="card score-panel">
-                        <div class="score-display">
-                            <div class="score-left">
-                                <div class="score-circle">
-                                    <svg viewBox="0 0 80 80">
-                                        <circle class="bg" cx="40" cy="40" r="36"></circle>
-                                        <circle id="progressRing" class="progress" cx="40" cy="40" r="36"></circle>
-                                    </svg>
-                                    <div id="scoreText" class="score-text">--</div>
-                                </div>
-                                <div class="score-info">
-                                    <h3 id="scoreLabel">等待检测</h3>
-                                    <p id="scoreDesc">点击开始监测</p>
-                                </div>
-                            </div>
-                            <div class="countdown-box">
-                                <div class="label">下次检测</div>
-                                <div>
-                                    <span id="countdown" class="time">--</span>
-                                    <span class="unit">秒</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="issuesContainer" class="issues-container"></div>
-                    </div>
+            <!-- 缩放控制 -->
+            <div class="zoom-bar">
+                <span class="material-icons-round">zoom_out</span>
+                <input id="zoomSlider" type="range" min="0.5" max="3" step="0.1" value="1">
+                <span class="material-icons-round">zoom_in</span>
+                <span id="zoomValue" class="zoom-value">1.0x</span>
+            </div>
 
-                    <div class="card log-section">
-                        <div class="log-header">
-                            <h3>检测记录</h3>
-                            <button onclick="clearLogs()">清空</button>
-                        </div>
-                        <div id="logList" class="log-list">
-                            <div class="log-empty">暂无检测记录</div>
-                        </div>
-                    </div>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div class="controls">
+            <button id="toggleBtn" class="btn btn-primary" onclick="toggleMonitoring()">
+                <span class="material-icons-round">play_arrow</span>
+                开始监测
+            </button>
+            <button id="manualBtn" class="btn btn-secondary" onclick="manualCheck()" disabled>
+                <span class="material-icons-round">camera</span>
+                立即检测
+            </button>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">
+        <span class="material-icons-round">check_circle</span>
+        <span id="toastText"></span>
+    </div>
+
+    <!-- 历史记录按钮 -->
+    <button class="history-btn" onclick="toggleHistoryPanel()">
+        <span class="material-icons-round">history</span>
+        <span id="historyBadge" class="badge" style="display:none;">0</span>
+    </button>
+
+    <!-- 历史记录面板 -->
+    <div id="historyPanel" class="history-panel" onclick="closeHistoryPanel(event)">
+        <div class="history-content" onclick="event.stopPropagation()">
+            <div class="history-header">
+                <h3>
+                    <span class="material-icons-round">history</span>
+                    检测记录
+                </h3>
+                <div class="history-header-actions">
+                    <button onclick="clearHistory()" title="清空记录">
+                        <span class="material-icons-round">delete_outline</span>
+                    </button>
+                    <button onclick="closeHistoryPanel()" title="关闭">
+                        <span class="material-icons-round">close</span>
+                    </button>
+                </div>
+            </div>
+            <div id="historyList" class="history-list">
+                <div class="history-empty">
+                    <span class="material-icons-round">inbox</span>
+                    <span>暂无检测记录</span>
                 </div>
             </div>
         </div>
-
-    <div id="toast" class="toast"></div>
+    </div>
 
     <script>
         // ============ 状态变量 ============
         let stream = null;
+        let videoTrack = null;
         let intervalId = null;
         let countdownId = null;
         let isMonitoring = false;
         let isChecking = false;
         let zoomFactor = 1.0;
-        const CHECK_INTERVAL = 30; // 30秒
+        let supportsHardwareZoom = false;
+        let zoomCapabilities = { min: 0.5, max: 3, step: 0.1 };
+        const CHECK_INTERVAL = 30;
         let timeLeft = CHECK_INTERVAL;
 
         // ============ DOM 元素 ============
@@ -720,36 +1126,87 @@
         const manualBtn = document.getElementById('manualBtn');
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
-        const videoOverlay = document.getElementById('videoOverlay');
-        const scoreText = document.getElementById('scoreText');
-        const scoreLabel = document.getElementById('scoreLabel');
-        const scoreDesc = document.getElementById('scoreDesc');
-        const progressRing = document.getElementById('progressRing');
-        const issuesContainer = document.getElementById('issuesContainer');
-        const logList = document.getElementById('logList');
+        const scanFrame = document.getElementById('scanFrame');
         const countdownEl = document.getElementById('countdown');
         const zoomSlider = document.getElementById('zoomSlider');
-        const zoomValue = document.getElementById('zoomValue');
+        const zoomValueEl = document.getElementById('zoomValue');
         const resultOverlay = document.getElementById('resultOverlay');
+        const resultProgress = document.getElementById('resultProgress');
+        const resultScoreNum = document.getElementById('resultScoreNum');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultIcon = document.getElementById('resultIcon');
+        const resultDesc = document.getElementById('resultDesc');
+        const resultTags = document.getElementById('resultTags');
+        const resultSuggestion = document.getElementById('resultSuggestion');
+        const resultSuggestionText = document.getElementById('resultSuggestionText');
 
         // ============ 摄像头控制 ============
         async function startCamera() {
             try {
-                // 优先使用后置摄像头
                 stream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         facingMode: { ideal: "environment" },
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
+                        width: { ideal: 1080 },
+                        height: { ideal: 1440 }
                     }
                 });
                 video.srcObject = stream;
-                showToast('摄像头已启动');
+
+                // 获取视频轨道
+                videoTrack = stream.getVideoTracks()[0];
+
+                // 检查是否支持硬件缩放
+                await checkZoomCapabilities();
+
+                showToast('摄像头已启动', 'videocam');
                 return true;
             } catch (err) {
                 console.error('摄像头启动失败:', err);
-                showToast('无法访问摄像头，请检查权限');
+                showToast('无法访问摄像头', 'error');
                 return false;
+            }
+        }
+
+        // 检查摄像头缩放能力
+        async function checkZoomCapabilities() {
+            if (!videoTrack) return;
+
+            try {
+                // 获取摄像头能力
+                const capabilities = videoTrack.getCapabilities();
+                console.log('摄像头能力:', capabilities);
+
+                if (capabilities.zoom) {
+                    supportsHardwareZoom = true;
+                    zoomCapabilities = {
+                        min: capabilities.zoom.min || 1,
+                        max: capabilities.zoom.max || 10,
+                        step: capabilities.zoom.step || 0.1
+                    };
+                    console.log('支持硬件缩放:', zoomCapabilities);
+
+                    // 更新滑杆范围
+                    zoomSlider.min = zoomCapabilities.min;
+                    zoomSlider.max = zoomCapabilities.max;
+                    zoomSlider.step = zoomCapabilities.step;
+                    zoomSlider.value = 1;
+
+                    showToast('支持摄像头缩放', 'zoom_in');
+                } else {
+                    supportsHardwareZoom = false;
+                    console.log('不支持硬件缩放，使用数字缩放');
+                    
+                    // 使用默认数字缩放范围
+                    zoomSlider.min = 0.5;
+                    zoomSlider.max = 3;
+                    zoomSlider.step = 0.1;
+                    zoomSlider.value = 1;
+                }
+
+                setZoom(zoomSlider.value);
+            } catch (err) {
+                console.warn('获取摄像头能力失败:', err);
+                supportsHardwareZoom = false;
             }
         }
 
@@ -757,6 +1214,31 @@
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
                 stream = null;
+                videoTrack = null;
+            }
+        }
+
+        // ============ 缩放控制 ============
+        async function setZoom(value) {
+            zoomFactor = parseFloat(value);
+            zoomValueEl.textContent = `${zoomFactor.toFixed(1)}x`;
+
+            if (supportsHardwareZoom && videoTrack) {
+                // 使用摄像头硬件缩放
+                try {
+                    await videoTrack.applyConstraints({
+                        advanced: [{ zoom: zoomFactor }]
+                    });
+                    // 硬件缩放时不需要CSS transform
+                    video.style.transform = 'none';
+                } catch (err) {
+                    console.warn('硬件缩放失败，回退到数字缩放:', err);
+                    supportsHardwareZoom = false;
+                    video.style.transform = `scale(${zoomFactor})`;
+                }
+            } else {
+                // 使用数字缩放（CSS transform）
+                video.style.transform = `scale(${zoomFactor})`;
             }
         }
 
@@ -765,31 +1247,33 @@
             if (!stream || isChecking) return;
 
             isChecking = true;
-            videoOverlay.classList.add('scanning');
+            scanFrame.classList.add('active');
             statusText.textContent = '分析中...';
 
             try {
-                // 抓取画面（支持数字变焦）
                 const context = canvas.getContext('2d');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
 
-                // 计算裁剪区域以实现数字缩放
-                const cropW = canvas.width / zoomFactor;
-                const cropH = canvas.height / zoomFactor;
-                const sx = (canvas.width - cropW) / 2;
-                const sy = (canvas.height - cropH) / 2;
+                if (supportsHardwareZoom) {
+                    // 硬件缩放时，直接绘制整个画面（摄像头已经缩放了）
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                } else {
+                    // 数字缩放时，裁剪中心区域
+                    const cropW = canvas.width / zoomFactor;
+                    const cropH = canvas.height / zoomFactor;
+                    const sx = (canvas.width - cropW) / 2;
+                    const sy = (canvas.height - cropH) / 2;
 
-                context.drawImage(
-                    video,
-                    sx, sy, cropW, cropH,       // 裁剪源区域
-                    0, 0, canvas.width, canvas.height // 目标全画布
-                );
+                    context.drawImage(
+                        video,
+                        sx, sy, cropW, cropH,
+                        0, 0, canvas.width, canvas.height
+                    );
+                }
 
-                // 压缩图片
                 const imageData = canvas.toDataURL('image/jpeg', 0.7);
 
-                // 发送请求
                 const response = await fetch('/check', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -801,11 +1285,11 @@
 
             } catch (err) {
                 console.error('检测失败:', err);
-                showToast('检测请求失败');
-                addLog(-1, '网络请求失败', 'neutral');
+                showToast('网络请求失败', 'error');
+                updateResult('--', '请求失败', '请检查网络连接', 'error', [], '');
             } finally {
                 isChecking = false;
-                videoOverlay.classList.remove('scanning');
+                scanFrame.classList.remove('active');
                 statusText.textContent = isMonitoring ? '监测中' : '已暂停';
             }
         }
@@ -817,134 +1301,95 @@
             const issues = data.issues || [];
             const suggestion = data.suggestion || '';
 
-            // 构建显示消息 - 显示完整的原始分析结果
-            const parts = [];
-            
-            // 状态信息
+            let title, desc, icon, type;
+
             if (status === 'no_person') {
-                parts.push('状态: 未检测到人物');
+                title = '未检测到人物';
+                desc = '请确保画面中有人';
+                icon = 'person_off';
+                type = 'neutral';
             } else if (status === 'not_writing') {
-                parts.push('状态: 当前不在写字状态');
+                title = '不在写字状态';
+                desc = '请保持写字姿势';
+                icon = 'edit_off';
+                type = 'neutral';
+            } else if (score >= 80) {
+                title = '姿势正确';
+                desc = '继续保持！';
+                icon = 'check_circle';
+                type = 'good';
+            } else if (score >= 60) {
+                title = '需要改进';
+                desc = '稍微调整一下';
+                icon = 'info';
+                type = 'warning';
             } else {
-                parts.push(`状态: ${status}`);
-            }
-            
-            // 得分信息
-            if (score !== '--' && score !== null && score !== undefined) {
-                parts.push(`得分: ${score}分`);
-            } else {
-                parts.push('得分: --');
-            }
-            
-            // 合格状态
-            parts.push(isQualified ? '✅ 合格' : '❌ 不合格');
-            
-            // 问题列表
-            if (issues && issues.length > 0) {
-                parts.push(`问题: ${issues.join('、')}`);
-            } else {
-                parts.push('问题: 无');
-            }
-            
-            // 建议
-            if (suggestion) {
-                parts.push(`建议: ${suggestion}`);
-            }
-            
-            const message = parts.join(' | ');
-            
-            // 在控制台也输出完整的原始结果，方便调试
-            console.log('完整分析结果:', data);
-
-            // 更新得分显示
-            if (score !== '--' && score !== null && score >= 0) {
-                updateScoreDisplay(score, isQualified);
-                updateIssues(issues);
-            } else {
-                // 特殊状态时显示 "--"
-                scoreText.textContent = '--';
-                progressRing.style.strokeDashoffset = 226;
-                progressRing.style.stroke = 'var(--text-secondary)';
-                scoreLabel.textContent = status === 'no_person' ? '未检测到人物' : 
-                                        status === 'not_writing' ? '不在写字状态' : 
-                                        '等待检测';
-                scoreDesc.textContent = '';
-                issuesContainer.innerHTML = '';
+                title = '姿势不佳';
+                desc = '请调整坐姿';
+                icon = 'warning';
+                type = 'bad';
             }
 
-            // 添加日志 - 显示完整信息
-            const logType = status === 'normal' ? (isQualified ? 'good' : 'bad') : 'neutral';
-            addLog(score !== '--' && score >= 0 ? score : '--', message, logType);
+            updateResult(score, title, desc, icon, type, issues, suggestion);
 
-            // 悬浮展示结果
-            const lines = [];
-            lines.push(`<span class="line">状态：${status}</span>`);
-            if (score !== '--' && score !== null && score !== undefined) {
-                lines.push(`<span class="line">得分：${score}（${isQualified ? '<span class="good">合格</span>' : '<span class="bad">不合格</span>'}）</span>`);
-            }
-            if (issues && issues.length > 0) {
-                lines.push(`<span class="line issues">问题：${issues.join('、')}</span>`);
-            } else {
-                lines.push(`<span class="line">问题：无</span>`);
-            }
-            if (suggestion) {
-                lines.push(`<span class="line">建议：${suggestion}</span>`);
-            }
-            resultOverlay.innerHTML = lines.join('');
-            resultOverlay.style.display = 'block';
+            // 保存到历史记录
+            addToHistory(data);
 
-            // 播放语音提醒（仅在正常状态且不合格时）
             if (status === 'normal' && data.audio) {
                 playAudio(data.audio);
             }
+
+            console.log('检测结果:', data);
         }
 
-        function updateScoreDisplay(score, isQualified) {
-            scoreText.textContent = score;
-            
-            // 更新环形进度条
-            const circumference = 226; // 2 * PI * 36
-            const offset = circumference - (score / 100) * circumference;
-            progressRing.style.strokeDashoffset = offset;
+        function updateResult(score, title, desc, icon, type, issues, suggestion) {
+            resultScoreNum.textContent = score;
+            resultIcon.textContent = icon;
+            resultTitle.innerHTML = `<span class="material-icons-round">${icon}</span>${title}`;
+            resultDesc.textContent = desc;
 
-            // 根据分数设置颜色
-            let color;
-            if (score >= 80) {
-                color = 'var(--success)';
-                scoreLabel.textContent = '姿势正确';
-                scoreDesc.textContent = '继续保持！';
-            } else if (score >= 60) {
-                color = 'var(--warning)';
-                scoreLabel.textContent = '需要改进';
-                scoreDesc.textContent = '稍微调整一下';
-            } else {
-                color = 'var(--danger)';
-                scoreLabel.textContent = '姿势不佳';
-                scoreDesc.textContent = '请调整坐姿';
+            // 更新进度环
+            const circumference = 157;
+            let offset = circumference;
+            let strokeColor = 'var(--text-muted)';
+
+            if (typeof score === 'number' && score >= 0) {
+                offset = circumference - (score / 100) * circumference;
+                if (type === 'good') strokeColor = 'var(--success)';
+                else if (type === 'warning') strokeColor = 'var(--warning)';
+                else if (type === 'bad') strokeColor = 'var(--danger)';
+                else strokeColor = 'var(--primary)';
             }
 
-            progressRing.style.stroke = color;
-            scoreText.style.color = color;
-        }
+            resultProgress.style.strokeDashoffset = offset;
+            resultProgress.style.stroke = strokeColor;
+            resultScoreNum.style.color = strokeColor;
 
-        function updateIssues(issues) {
-            issuesContainer.innerHTML = issues.map(issue => 
-                `<span class="issue-tag">${issue}</span>`
-            ).join('');
-        }
+            // 问题标签
+            if (issues && issues.length > 0) {
+                resultTags.innerHTML = issues.map(i => 
+                    `<span class="result-tag"><span class="material-icons-round">report_problem</span>${i}</span>`
+                ).join('');
+                resultTags.style.display = 'flex';
+            } else {
+                resultTags.style.display = 'none';
+            }
 
-        // ============ 变焦控制 ============
-        function setZoom(value) {
-            zoomFactor = parseFloat(value);
-            zoomValue.textContent = `${zoomFactor.toFixed(1)}x`;
+            // 建议
+            if (suggestion) {
+                resultSuggestionText.textContent = suggestion;
+                resultSuggestion.style.display = 'flex';
+            } else {
+                resultSuggestion.style.display = 'none';
+            }
+
+            resultOverlay.classList.add('show');
         }
 
         function playAudio(base64Audio) {
             try {
                 const audio = new Audio("data:audio/mp3;base64," + base64Audio);
-                audio.play().catch(e => {
-                    console.log("音频播放失败 (需要用户交互):", e);
-                });
+                audio.play().catch(e => console.log("音频播放需要用户交互:", e));
             } catch (e) {
                 console.error("音频创建失败:", e);
             }
@@ -953,43 +1398,36 @@
         // ============ 监测控制 ============
         async function toggleMonitoring() {
             if (!isMonitoring) {
-                // 开始监测
                 if (!stream) {
                     const success = await startCamera();
                     if (!success) return;
                 }
 
                 isMonitoring = true;
-                toggleBtn.innerHTML = '<span>⏸</span> 停止监测';
+                toggleBtn.innerHTML = '<span class="material-icons-round">pause</span>停止监测';
                 toggleBtn.classList.remove('btn-primary');
                 toggleBtn.classList.add('btn-danger');
                 manualBtn.disabled = false;
                 statusDot.classList.add('active');
                 statusText.textContent = '监测中';
 
-                // 立即执行一次检测
                 captureAndCheck();
 
-                // 启动定时器
                 timeLeft = CHECK_INTERVAL;
                 countdownEl.textContent = timeLeft;
 
                 countdownId = setInterval(() => {
                     timeLeft--;
                     countdownEl.textContent = timeLeft;
-                    if (timeLeft <= 0) {
-                        timeLeft = CHECK_INTERVAL;
-                    }
+                    if (timeLeft <= 0) timeLeft = CHECK_INTERVAL;
                 }, 1000);
 
                 intervalId = setInterval(captureAndCheck, CHECK_INTERVAL * 1000);
-
-                showToast('开始监测');
+                showToast('开始监测', 'play_circle');
 
             } else {
-                // 停止监测
                 isMonitoring = false;
-                toggleBtn.innerHTML = '<span>▶</span> 开始监测';
+                toggleBtn.innerHTML = '<span class="material-icons-round">play_arrow</span>开始监测';
                 toggleBtn.classList.remove('btn-danger');
                 toggleBtn.classList.add('btn-primary');
                 manualBtn.disabled = true;
@@ -999,83 +1437,198 @@
 
                 clearInterval(intervalId);
                 clearInterval(countdownId);
-
-                showToast('已停止监测');
+                showToast('已停止监测', 'pause_circle');
             }
         }
 
         function manualCheck() {
             if (!isMonitoring || isChecking) return;
-            
-            // 重置倒计时
             timeLeft = CHECK_INTERVAL;
             countdownEl.textContent = timeLeft;
-            
             captureAndCheck();
         }
 
-        // ============ 日志管理 ============
-        function addLog(score, message, type = 'neutral') {
-            const emptyEl = logList.querySelector('.log-empty');
-            if (emptyEl) emptyEl.remove();
+        // ============ Toast ============
+        function showToast(message, icon = 'check_circle', duration = 1500) {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toastText');
+            const toastIcon = toast.querySelector('.material-icons-round');
+            
+            toastIcon.textContent = icon;
+            toastText.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => toast.classList.remove('show'), duration);
+        }
 
-            const time = new Date().toLocaleTimeString('zh-CN', { 
-                hour: '2-digit', 
-                minute: '2-digit',
-                second: '2-digit'
-            });
+        // ============ 历史记录管理 ============
+        let historyLogs = [];
+        const historyPanel = document.getElementById('historyPanel');
+        const historyList = document.getElementById('historyList');
+        const historyBadge = document.getElementById('historyBadge');
 
-            const logItem = document.createElement('div');
-            logItem.className = 'log-item';
-            logItem.innerHTML = `
-                <div class="log-score ${type}">
-                    ${score >= 0 ? score : '--'}
-                </div>
-                <div class="log-content">
-                    <div class="log-time">${time}</div>
-                    <div class="log-message">${message}</div>
-                </div>
-            `;
-
-            logList.insertBefore(logItem, logList.firstChild);
-
-            // 限制日志数量
-            while (logList.children.length > 50) {
-                logList.removeChild(logList.lastChild);
+        function toggleHistoryPanel() {
+            historyPanel.classList.toggle('show');
+            if (historyPanel.classList.contains('show')) {
+                loadHistory();
             }
         }
 
-        function clearLogs() {
-            logList.innerHTML = '<div class="log-empty">暂无检测记录</div>';
-            showToast('已清空记录');
+        function closeHistoryPanel(event) {
+            if (!event || event.target === historyPanel) {
+                historyPanel.classList.remove('show');
+            }
         }
 
-        // ============ Toast 提示 ============
-        function showToast(message, duration = 2000) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
+        function addToHistory(data) {
+            const record = {
+                timestamp: new Date().toISOString(),
+                time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                date: new Date().toLocaleDateString('zh-CN'),
+                status: data.status || 'normal',
+                score: data.score,
+                isQualified: data.is_qualified || false,
+                issues: data.issues || [],
+                suggestion: data.suggestion || ''
+            };
 
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, duration);
+            historyLogs.unshift(record);
+            
+            // 限制最多保存100条
+            if (historyLogs.length > 100) {
+                historyLogs = historyLogs.slice(0, 100);
+            }
+
+            // 保存到 localStorage
+            try {
+                localStorage.setItem('postureHistory', JSON.stringify(historyLogs));
+            } catch (e) {
+                console.warn('保存历史记录失败:', e);
+            }
+
+            updateHistoryBadge();
+        }
+
+        function loadHistory() {
+            // 从 localStorage 加载
+            try {
+                const saved = localStorage.getItem('postureHistory');
+                if (saved) {
+                    historyLogs = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.warn('加载历史记录失败:', e);
+            }
+
+            renderHistoryList();
+        }
+
+        function renderHistoryList() {
+            if (historyLogs.length === 0) {
+                historyList.innerHTML = `
+                    <div class="history-empty">
+                        <span class="material-icons-round">inbox</span>
+                        <span>暂无检测记录</span>
+                    </div>
+                `;
+                return;
+            }
+
+            historyList.innerHTML = historyLogs.map((record, index) => {
+                const score = record.score !== undefined && record.score !== null ? record.score : '--';
+                let scoreClass = 'neutral';
+                let icon = 'help_outline';
+                let title = '未知状态';
+
+                if (record.status === 'no_person') {
+                    title = '未检测到人物';
+                    icon = 'person_off';
+                } else if (record.status === 'not_writing') {
+                    title = '不在写字状态';
+                    icon = 'edit_off';
+                } else if (typeof score === 'number') {
+                    if (score >= 80) {
+                        scoreClass = 'good';
+                        icon = 'check_circle';
+                        title = '姿势正确';
+                    } else if (score >= 60) {
+                        scoreClass = 'bad';
+                        icon = 'info';
+                        title = '需要改进';
+                    } else {
+                        scoreClass = 'bad';
+                        icon = 'warning';
+                        title = '姿势不佳';
+                    }
+                }
+
+                const issuesHtml = record.issues && record.issues.length > 0 
+                    ? `<div class="history-item-issues">${record.issues.map(i => `<span>${i}</span>`).join('')}</div>`
+                    : '';
+
+                const suggestionHtml = record.suggestion 
+                    ? `<div class="history-item-suggestion">💡 ${record.suggestion}</div>`
+                    : '';
+
+                return `
+                    <div class="history-item" style="animation-delay: ${index * 0.05}s">
+                        <div class="history-item-score ${scoreClass}">${score}</div>
+                        <div class="history-item-content">
+                            <div class="history-item-header">
+                                <span class="history-item-title">
+                                    <span class="material-icons-round">${icon}</span>
+                                    ${title}
+                                </span>
+                                <span class="history-item-time">${record.time}</span>
+                            </div>
+                            ${issuesHtml}
+                            ${suggestionHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function clearHistory() {
+            if (confirm('确定要清空所有检测记录吗？')) {
+                historyLogs = [];
+                try {
+                    localStorage.removeItem('postureHistory');
+                } catch (e) {}
+                renderHistoryList();
+                updateHistoryBadge();
+                showToast('记录已清空', 'delete');
+            }
+        }
+
+        function updateHistoryBadge() {
+            const count = historyLogs.length;
+            if (count > 0) {
+                historyBadge.textContent = count > 99 ? '99+' : count;
+                historyBadge.style.display = 'flex';
+            } else {
+                historyBadge.style.display = 'none';
+            }
         }
 
         // ============ 初始化 ============
-        document.addEventListener('DOMContentLoaded', () => {
-            // 预先请求摄像头权限
-            startCamera();
-
-            // 初始化变焦
+        document.addEventListener('DOMContentLoaded', async () => {
+            await startCamera();
             if (zoomSlider) {
                 zoomSlider.addEventListener('input', (e) => setZoom(e.target.value));
-                setZoom(zoomSlider.value);
             }
+            // 加载历史记录
+            loadHistory();
+            updateHistoryBadge();
         });
 
-        // 页面关闭时停止摄像头
-        window.addEventListener('beforeunload', () => {
-            stopCamera();
+        window.addEventListener('beforeunload', stopCamera);
+
+        // ESC 关闭面板
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && historyPanel.classList.contains('show')) {
+                closeHistoryPanel();
+            }
         });
     </script>
 </body>
