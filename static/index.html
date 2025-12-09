@@ -533,6 +533,23 @@
             font-variant-numeric: tabular-nums;
         }
 
+        .zoom-bar .zoom-mode {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            padding: 2px 6px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .zoom-bar[data-mode="hardware"] .zoom-mode::after {
+            content: "光学";
+        }
+
+        .zoom-bar[data-mode="digital"] .zoom-mode::after {
+            content: "数字";
+        }
+
         /* 控制按钮 */
         .controls {
             display: flex;
@@ -1045,11 +1062,12 @@
             </div>
 
             <!-- 缩放控制 -->
-            <div class="zoom-bar">
+            <div class="zoom-bar" data-mode="digital">
                 <span class="material-icons-round">zoom_out</span>
-                <input id="zoomSlider" type="range" min="0.5" max="3" step="0.1" value="1">
+                <input id="zoomSlider" type="range" min="1" max="3" step="0.1" value="1">
                 <span class="material-icons-round">zoom_in</span>
                 <span id="zoomValue" class="zoom-value">1.0x</span>
+                <span class="zoom-mode"></span>
             </div>
 
             <canvas id="canvas"></canvas>
@@ -1171,6 +1189,9 @@
         async function checkZoomCapabilities() {
             if (!videoTrack) return;
 
+            // 确保视频初始状态不被放大
+            video.style.transform = 'none';
+
             try {
                 // 获取摄像头能力
                 const capabilities = videoTrack.getCapabilities();
@@ -1189,24 +1210,49 @@
                     zoomSlider.min = zoomCapabilities.min;
                     zoomSlider.max = zoomCapabilities.max;
                     zoomSlider.step = zoomCapabilities.step;
-                    zoomSlider.value = 1;
+                    zoomSlider.value = zoomCapabilities.min; // 从最小值开始
+                    
+                    // 初始化为最小缩放
+                    await setZoom(zoomCapabilities.min);
 
                     showToast('支持摄像头缩放', 'zoom_in');
+                    updateZoomModeUI(true);
                 } else {
                     supportsHardwareZoom = false;
-                    console.log('不支持硬件缩放，使用数字缩放');
+                    console.log('不支持硬件缩放，使用数字缩放（仅截图时生效）');
                     
-                    // 使用默认数字缩放范围
-                    zoomSlider.min = 0.5;
+                    // 数字缩放：只在截图时裁剪，预览保持原样
+                    zoomSlider.min = 1;
                     zoomSlider.max = 3;
                     zoomSlider.step = 0.1;
                     zoomSlider.value = 1;
-                }
+                    zoomFactor = 1;
+                    zoomValueEl.textContent = '1.0x';
 
-                setZoom(zoomSlider.value);
+                    showToast('数字缩放（截图时生效）', 'crop');
+                    updateZoomModeUI(false);
+                }
             } catch (err) {
                 console.warn('获取摄像头能力失败:', err);
                 supportsHardwareZoom = false;
+                zoomSlider.value = 1;
+                zoomFactor = 1;
+                zoomValueEl.textContent = '1.0x';
+                updateZoomModeUI(false);
+            }
+        }
+
+        // 更新缩放模式UI提示
+        function updateZoomModeUI(isHardware) {
+            const zoomBar = document.querySelector('.zoom-bar');
+            if (zoomBar) {
+                if (isHardware) {
+                    zoomBar.setAttribute('data-mode', 'hardware');
+                    zoomBar.title = '摄像头光学缩放';
+                } else {
+                    zoomBar.setAttribute('data-mode', 'digital');
+                    zoomBar.title = '数字缩放（截图时裁剪中心区域）';
+                }
             }
         }
 
@@ -1216,6 +1262,8 @@
                 stream = null;
                 videoTrack = null;
             }
+            // 重置视频变换
+            video.style.transform = 'none';
         }
 
         // ============ 缩放控制 ============
@@ -1224,22 +1272,24 @@
             zoomValueEl.textContent = `${zoomFactor.toFixed(1)}x`;
 
             if (supportsHardwareZoom && videoTrack) {
-                // 使用摄像头硬件缩放
+                // 使用摄像头硬件缩放（真正的光学/数字变焦）
                 try {
                     await videoTrack.applyConstraints({
                         advanced: [{ zoom: zoomFactor }]
                     });
-                    // 硬件缩放时不需要CSS transform
+                    // 硬件缩放成功，视频预览会自动更新
                     video.style.transform = 'none';
+                    console.log('硬件缩放设置成功:', zoomFactor);
                 } catch (err) {
-                    console.warn('硬件缩放失败，回退到数字缩放:', err);
+                    console.warn('硬件缩放失败:', err);
+                    // 回退到数字缩放模式
                     supportsHardwareZoom = false;
-                    video.style.transform = `scale(${zoomFactor})`;
+                    updateZoomModeUI(false);
+                    showToast('切换到数字缩放', 'crop');
                 }
-            } else {
-                // 使用数字缩放（CSS transform）
-                video.style.transform = `scale(${zoomFactor})`;
             }
+            // 数字缩放模式：不修改视频预览，只在截图时裁剪
+            // 视频保持原样，zoomFactor 用于 captureAndCheck 时的裁剪
         }
 
         // ============ 坐姿检测 ============
